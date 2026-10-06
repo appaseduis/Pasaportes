@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/guards";
 import { formatFecha, hhmm } from "@/lib/format";
+import EstadoBadge from "@/components/EstadoBadge";
 
 type SP = Promise<{ j?: string; f?: string; h?: string; e?: string; m?: string; l?: string; q?: string; p?: string }>;
 
@@ -95,10 +96,13 @@ export default async function RegistrosPage({ searchParams }: { searchParams: SP
           </select>
         </div>
         <div>
-          <label className="label">Estado</label>
+          <th className="p-2">Estado</th>
           <select name="e" defaultValue={sp.e ?? ""} className="input">
             <option value="">Todos</option>
             <option value="asignada">Asignada</option>
+            <option value="asistio">Asistió</option>
+            <option value="no_asistio">No asistió</option>
+            <option value="reprogramado">Reprogramada</option>
           </select>
         </div>
         <div>
@@ -160,6 +164,7 @@ export default async function RegistrosPage({ searchParams }: { searchParams: SP
                 <td className="p-2 font-mono">{r.telefono}</td>
                 <td className="p-2">{formatFecha(r.fecha, { day: "2-digit", month: "short" })}</td>
                 <td className="p-2 font-semibold">{hhmm(r.hora_inicio)}</td>
+                <td className="p-2"><EstadoBadge estado={r.estado} /></td>
                 <td className="p-2 capitalize">{r.metodo_registro}</td>
                 <td className="p-2">{r.logistica ?? "—"}</td>
                 <td className="p-2 text-xs text-black/60">

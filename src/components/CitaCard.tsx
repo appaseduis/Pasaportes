@@ -1,5 +1,6 @@
 import { formatFecha } from "@/lib/format";
 import type { Cita } from "@/lib/types";
+import EstadoBadge from "@/components/EstadoBadge";
 
 export default function CitaCard({ cita, tone = "ok" }: { cita: Cita; tone?: "ok" | "warn" }) {
   const border = tone === "ok" ? "border-ok" : "border-warn";
@@ -23,9 +24,14 @@ export default function CitaCard({ cita, tone = "ok" }: { cita: Cita; tone?: "ok
           <p className="text-3xl font-bold text-brand">{cita.hora_presentacion}</p>
         </div>
       </div>
-      <p className="text-xs uppercase text-black/50">
-        Estado: {cita.estado} · Orden #{cita.orden_registro}
-      </p>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-black/50">
+        <EstadoBadge estado={cita.estado} /> · Orden #{cita.orden_registro}
+      </div>
+      {cita.comentario && (
+        <p className="rounded-lg bg-warn/20 px-3 py-2 text-sm">
+          <b>Motivo:</b> {cita.comentario}
+        </p>
+      )}
     </div>
   );
 }

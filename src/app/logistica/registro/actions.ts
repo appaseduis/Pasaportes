@@ -52,30 +52,51 @@ export async function registerPerson(_: RegistroState, fd: FormData): Promise<Re
   };
 }
 
+
 // ---------- Consulta por cédula (solo jornada de la sesión) ----------
 export type ConsultaState = { cita?: Cita; mensaje?: string; ts: number } | null;
+export type StatusState = { ok: boolean; mensaje: string; cita?: Cita; ts: number } | null;
+
+async function citaPorCedula(journeyId: string, doc: string): Promise<Cita | null> {
+  const db = createAdminClient();
+  const { data: person } = await db.from("people").select("id").eq("numero_documento", doc).maybeSingle();
+  if (!person) return null;
+  const { data: appt } = await db.from("appointments").select("id")
+    .eq("journey_id", journeyId).eq("person_id", person.id).maybeSingle();
+  if (!appt) return null;
+  const { data: cita } = await db.rpc("appointment_json", { p_appointment_id: appt.id });
+  return (cita as Cita) ?? null;
+}
 
 export async function lookupByDocument(_: ConsultaState, fd: FormData): Promise<ConsultaState> {
   const ctx = await requireLogistics();
   const doc = (fd.get("numero_documento")?.toString() ?? "").replace(/\D/g, "");
+  if (!/^\d{3,15}$/.test(doc)) return { mensaje: "Escribe un número de cédula válido.", ts: Date.now() };
 
-  if (!/^\d{3,15}$/.test(doc)) {
-    return { mensaje: "Escribe un número de cédula válido.", ts: Date.now() };
+  const cita = await citaPorCedula(ctx.journeyId, doc);
+  if (!cita) return { mensaje: `No hay cita para la cédula ${doc} en esta jornada.`, ts: Date.now() };
+  return { cita, ts: Date.now() };
+}
+
+export async function setAppointmentStatus(_: StatusState, fd: FormData): Promise<StatusState> {
+  const ctx = await requireLogistics();
+  const doc = (fd.get("numero_documento")?.toString() ?? "").replace(/\D/g, "");
+
+  const { data, error } = await createAdminClient().rpc("set_appointment_status", {
+    p_logistics_user_id: ctx.userId,
+    p_journey_id: ctx.journeyId,
+    p_numero_documento: doc,
+    p_estado: fd.get("estado")?.toString() ?? "",
+    p_comentario: fd.get("comentario")?.toString() ?? null,
+  });
+
+  if (error) {
+    console.error("set_appointment_status:", error);
+    return { ok: false, mensaje: "Error del servidor. Intenta de nuevo.", ts: Date.now() };
   }
 
-  const db = createAdminClient();
-
-  const { data: person } = await db.from("people").select("id").eq("numero_documento", doc).maybeSingle();
-
-  const { data: appt } = person
-    ? await db.from("appointments").select("id")
-        .eq("journey_id", ctx.journeyId).eq("person_id", person.id).maybeSingle()
-    : { data: null };
-
-  if (!appt) {
-    return { mensaje: `No hay cita para la cédula ${doc} en esta jornada.`, ts: Date.now() };
-  }
-
-  const { data: cita } = await db.rpc("appointment_json", { p_appointment_id: appt.id });
-  return { cita: cita as Cita, ts: Date.now() };
+  const r = data as { ok: boolean; mensaje: string };
+  const cita = (await citaPorCedula(ctx.journeyId, doc)) ?? undefined;
+  revalidatePath("/logistica/consulta");
+  return { ...r, cita, ts: Date.now() };
 }

@@ -6,6 +6,8 @@ export type Cita = {
   hora_presentacion: string;
   estado: string;
   orden_registro: number;
+  comentario?: string | null;
+  historial?: { estado: string; comentario: string | null; fecha: string; logistica: string | null }[];
 };
 
 export type RegistroState = {
