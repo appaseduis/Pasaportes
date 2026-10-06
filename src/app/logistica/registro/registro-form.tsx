@@ -46,7 +46,7 @@ function Result({ state }: { state: NonNullable<RegistroState> }) {
       </div>
     );
   }
-  if (state.codigo === "YA_REGISTRADO") {
+    if (state.codigo === "YA_REGISTRADO" || state.codigo === "CEDULA_USADA") {
     return (
       <div className="space-y-2">
         <p className="rounded-lg border border-warn bg-warn/20 px-3 py-2 text-sm font-semibold">⚠ {state.mensaje}</p>
