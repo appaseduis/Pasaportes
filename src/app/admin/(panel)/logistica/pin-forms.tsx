@@ -30,8 +30,8 @@ export function CreateUserForm() {
       <div className="flex flex-wrap gap-3">
         <input name="nombre_interno" placeholder="Ej: Mesa 1 - Laura" className="input flex-1" required />
         <select name="rol" defaultValue="logistica" className="input w-auto">
-          <option value="logistica">Logística (registro)</option>
-          <option value="oficina">Oficina (solo consulta)</option>
+          <option value="logistica">Recoleccion de datos (registro)</option>
+          <option value="oficina">Oficina Principal (Asitencia)</option>
         </select>
         <button className="btn-primary" disabled={pending}>
           {pending ? "Creando..." : "Crear y generar PIN"}
