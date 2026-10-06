@@ -2,8 +2,8 @@ export type Cita = {
   nombre_completo: string;
   numero_documento: string;
   jornada: string;
-  fecha: string;
-  hora_presentacion: string;
+  fecha: string | null;
+  hora_presentacion: string | null;
   estado: string;
   orden_registro: number;
   comentario?: string | null;

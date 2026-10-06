@@ -39,6 +39,13 @@ export default async function JornadasPage({ searchParams }: { searchParams: SP 
           <label className="label">Capacidad objetivo</label>
           <input name="capacidad_total_objetivo" type="number" min={1} className="input" required />
         </div>
+        <div className="sm:col-span-2">
+          <label className="label">Modo</label>
+          <select name="modo" defaultValue="agenda" className="input">
+            <option value="agenda">Agenda (con fechas y horarios)</option>
+            <option value="preinscripcion">Preinscripción (fecha y hora por definir)</option>
+          </select>
+        </div>
             <input type="hidden" name="capacidad_max_por_horario" value={30} />
         <button className="btn-primary sm:col-span-4 sm:justify-self-end">Crear jornada</button>
       </form>

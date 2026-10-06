@@ -6,8 +6,8 @@ import EstadoBadge from "@/components/EstadoBadge";
 import ConfirmSubmit from "@/components/ConfirmSubmit";
 import { formatFecha, hhmm } from "@/lib/format";
 import {
-  updateJourney, setJourneyEstado, addDate, updateDate, deleteDate,
-  generateSlots, updateSlot, deleteSlot, deleteJourney, resetJourney,
+    updateJourney, setJourneyEstado, addDate, updateDate, deleteDate,
+    generateSlots, updateSlot, deleteSlot, deleteJourney, resetJourney, assignPending,
 } from "../actions";
 import Collapsible from "@/components/Collapsible";
 import CapacityCalculator from "@/components/CapacityCalculator";
@@ -44,7 +44,11 @@ export default async function JornadaDetalle({
   const sumFechas = dates.filter((d) => d.estado === "activa").reduce((a, d) => a + d.capacidad_total, 0);
   const sumSlotsDate = (d: DateRow) => activeSlots(d).reduce((a, s) => a + s.capacidad, 0);
   const sumSlots = dates.filter((d) => d.estado === "activa").reduce((a, d) => a + sumSlotsDate(d), 0);
+    const { count: pendientes } = await supabase
+    .from("appointments").select("id", { count: "exact", head: true })
+    .eq("journey_id", id).is("time_slot_id", null);
   const ocupados = dates.reduce((a, d) => a + d.time_slots.reduce((b, s) => b + s.ocupados, 0), 0);
+    const totalCitas = ocupados + (pendientes ?? 0);
 
   const stat = (label: string, value: number, okCond = true) => (
     <div className="card p-3">
@@ -86,23 +90,56 @@ export default async function JornadaDetalle({
         {stat("Citas asignadas", ocupados)}
       </div>
 
-      <form action={updateJourney} className="card grid gap-3 sm:grid-cols-4 sm:items-end">
+      {(j.modo === "preinscripcion" || (pendientes ?? 0) > 0) && (
+        <section className="card space-y-3 border-2 border-brand">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-semibold text-brand">Preinscripción</h2>
+            <span className="text-sm">
+              Preinscritos sin horario: <b>{pendientes ?? 0}</b> / {j.capacidad_total_objetivo}
+            </span>
+          </div>
+          <p className="text-xs text-black/60">
+            Cuando conozcas las fechas: agrégalas con sus horarios abajo y luego presiona el botón.
+            Se asignan en orden de inscripción (primera fecha → primer horario).
+          </p>
+          {(pendientes ?? 0) > 0 && (
+            <form action={assignPending}>
+              <H n="journey_id" v={j.id} />
+              <ConfirmSubmit className="btn-primary"
+                message={`¿Asignar fecha y hora a los ${pendientes} preinscrito(s) en orden de inscripción?`}>
+                Asignar horarios a preinscritos
+              </ConfirmSubmit>
+            </form>
+          )}
+        </section>
+      )}
+            <form action={updateJourney} className="card grid gap-3 sm:grid-cols-4 sm:items-end">
         <H n="journey_id" v={j.id} />
+        <input type="hidden" name="capacidad_max_por_horario" value={j.capacidad_max_por_horario} />
+
         <div className="sm:col-span-2">
           <label className="label">Nombre</label>
           <input name="nombre" defaultValue={j.nombre} className="input" required />
         </div>
         <div>
           <label className="label">Capacidad objetivo</label>
-          <input name="capacidad_total_objetivo" type="number" min={1} defaultValue={j.capacidad_total_objetivo} className="input" required />
+          <input name="capacidad_total_objetivo" type="number" min={1}
+            defaultValue={j.capacidad_total_objetivo} className="input" required />
         </div>
-          <input type="hidden" name="capacidad_max_por_horario" value={j.capacidad_max_por_horario} />
-        <div />
+        <div>
+          <label className="label">Modo</label>
+          <select name="modo" defaultValue={j.modo} className="input">
+            <option value="agenda">Agenda</option>
+            <option value="preinscripcion">Preinscripción</option>
+          </select>
+        </div>
+
         <CapacityCalculator
           modulos={j.modulos}
           minutos={j.minutos_por_persona}
           max={j.capacidad_max_por_horario}
         />
+
         <button className="btn-outline sm:col-span-4 sm:justify-self-end">Guardar cambios</button>
       </form>
 
@@ -243,10 +280,10 @@ export default async function JornadaDetalle({
         <div className="space-y-2">
           <p className="text-sm font-medium">Reiniciar jornada</p>
           <p className="text-xs text-black/60">
-            Elimina las <b>{ocupados}</b> cita(s) y deja la disponibilidad en cero. Conserva fechas,
+            Elimina las <b>{totalCitas}</b> cita(s) y deja la disponibilidad en cero. Conserva fechas,
             horarios, capacidades y usuarios de logística. <b>Exporta los datos antes.</b>
           </p>
-          {ocupados > 0 ? (
+          {totalCitas > 0 ? (
             <form action={resetJourney} className="flex flex-wrap items-end gap-3">
               <H n="journey_id" v={j.id} />
               <div className="flex-1">
@@ -254,7 +291,7 @@ export default async function JornadaDetalle({
                 <input name="confirmacion" className="input" autoComplete="off" required />
               </div>
               <ConfirmSubmit className="btn-danger"
-                message={`¿Eliminar las ${ocupados} cita(s) de esta jornada? No se puede deshacer.`}>
+                message={`¿Eliminar las ${totalCitas} cita(s) de esta jornada? No se puede deshacer.`}>
                 Reiniciar jornada
               </ConfirmSubmit>
             </form>
@@ -268,7 +305,7 @@ export default async function JornadaDetalle({
           <p className="text-sm font-medium">Eliminar jornada</p>
           {j.estado === "activa" ? (
             <p className="text-xs text-black/60">Primero debes <b>desactivarla</b>.</p>
-          ) : ocupados > 0 ? (
+          ) : totalCitas > 0 ? (
             <p className="text-xs text-black/60">Primero <b>reiníciala</b> para eliminar sus citas.</p>
           ) : (
             <form action={deleteJourney} className="flex flex-wrap items-end gap-3">

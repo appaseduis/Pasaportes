@@ -14,6 +14,7 @@ const posInt = z.coerce.number().int().positive();
 const hora = z.string().regex(/^\d{2}:\d{2}$/);
 const fechaRx = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+
 const val = (fd: FormData, k: string) => fd.get(k)?.toString() ?? "";
 
 function fail(path: string, msg: string): never {
@@ -44,6 +45,7 @@ const optPos = z.preprocess(
 );
 
 const journeySchema = z.object({
+  modo: z.enum(["agenda", "preinscripcion"]),
   nombre: z.string().trim().min(3).max(120),
   capacidad_total_objetivo: posInt,
   capacidad_max_por_horario: posInt,
@@ -54,6 +56,7 @@ const journeySchema = z.object({
 function parseJourney(fd: FormData, path: string) {
   const p = journeySchema.safeParse({
     nombre: val(fd, "nombre"),
+    modo: val(fd, "modo") || "agenda",
     capacidad_total_objetivo: val(fd, "capacidad_total_objetivo"),
     capacidad_max_por_horario: val(fd, "capacidad_max_por_horario"),
     modulos: val(fd, "modulos"),
@@ -204,4 +207,21 @@ export async function resetJourney(fd: FormData) {
   });
   if (error) fail(detail(id), error.message);
   done(detail(id), null, `Jornada reiniciada: ${data} cita(s) eliminada(s).`);
+}
+
+// ---------- Asignar horarios a preinscritos ----------
+export async function assignPending(fd: FormData) {
+  const { supabase } = await requireAdmin();
+  const id = journeyId(fd);
+  const { data, error } = await supabase.rpc("assign_pending_slots", { p_journey_id: id });
+  if (error) fail(detail(id), error.message);
+
+  const r = data as { asignadas: number; pendientes: number };
+  done(
+    detail(id),
+    null,
+    r.pendientes
+      ? `${r.asignadas} asignado(s). Quedan ${r.pendientes} sin horario: agrega más horarios y repite.`
+      : `${r.asignadas} preinscrito(s) asignados. La jornada pasó a modo agenda.`
+  );
 }

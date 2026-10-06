@@ -8,6 +8,7 @@ const STYLES: Record<string, string> = {
   asistio: "bg-ok/15 text-ok",
   no_asistio: "bg-danger/15 text-danger",
   reprogramado: "bg-warn/30 text-ink",
+  preinscrita: "bg-brand text-white",
 };
 
 const LABELS: Record<string, string> = {
@@ -15,6 +16,7 @@ const LABELS: Record<string, string> = {
   asistio: "Asistió",
   no_asistio: "No asistió",
   reprogramado: "Reprogramada",
+  preinscrita: "Preinscrita",
 };
 
 export default function EstadoBadge({ estado }: { estado: string }) {

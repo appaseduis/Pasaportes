@@ -47,7 +47,11 @@ export default function ConsultaOficina() {
               </div>
               <CitaCard cita={c} />
 
-              {c.estado === "asistio" ? (
+              {c.estado === "preinscrita" ? (
+                <p className="rounded-lg bg-brand/10 px-3 py-2 text-sm">
+                  Preinscrita: aún no tiene fecha y hora asignadas.
+                </p>
+              ) : c.estado === "asistio" ? (
                 <p className="alert-ok font-semibold">✓ La persona ya asistió. El estado es final.</p>
               ) : (
                 <div className="card space-y-3">

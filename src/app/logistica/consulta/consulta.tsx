@@ -44,7 +44,11 @@ export default function Consulta() {
         <>
           <CitaCard cita={cita} />
 
-          {cita.estado === "asistio" ? (
+        {cita.estado === "preinscrita" ? (
+            <p className="rounded-lg bg-brand/10 px-3 py-2 text-sm">
+              Preinscrita: aún no tiene fecha y hora. Los estados se habilitan cuando se asignen horarios.
+            </p>
+          ) : cita.estado === "asistio" ? (
             <p className="alert-ok font-semibold">✓ La persona ya asistió. El estado es final.</p>
           ) : (
             <div className="card space-y-3">

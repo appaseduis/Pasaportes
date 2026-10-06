@@ -41,7 +41,7 @@ function Result({ state }: { state: NonNullable<RegistroState> }) {
   if (state.ok && state.cita) {
     return (
       <div className="space-y-2">
-        <p className="alert-ok font-semibold">✓ Cita asignada correctamente</p>
+        <p className="alert-ok font-semibold">✓ {state.mensaje}</p>
         <CitaCard cita={state.cita} />
       </div>
     );
